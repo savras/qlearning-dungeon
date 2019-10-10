@@ -1,4 +1,4 @@
-from enum import *
+from enums import *
 import random
 
 class Dunkard:
