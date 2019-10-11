@@ -1,7 +1,7 @@
-from enums import *
+from action import *
 import random
 
-class Dunkard:
+class Drunkard:
     def __init__(self):
         self.q_table = None
 
