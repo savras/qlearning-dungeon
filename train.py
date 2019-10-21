@@ -17,9 +17,8 @@ def print_progress(step, total_reward):
     time.sleep(0.001) # Avoid spamming stdout
 
 def main():
-    print('Training')
     parser = argparse.ArgumentParser()
-    parser.add_argument('--agent', type = str, default = 'GAMBLER', help = 'Pick an agent to use. Pick from GAMBLER, ACCOUNTANT, or DRUNKARD')
+    parser.add_argument('--agent', type = str, default = 'DEEP_GAMBLER', help = 'Pick an agent to use. Pick from GAMBLER, ACCOUNTANT, or DRUNKARD')
     parser.add_argument('--learning_rate', type = float, default = 0.1, help = 'How quickly the agent learns')
     parser.add_argument('--discount', type = float, default = 0.95, help = 'Specify the discount for estimated future action')
     parser.add_argument('--iterations', type = int, default = 2000, help = 'The number of iterations to train')
@@ -27,21 +26,21 @@ def main():
     FLAGS, unparsed = parser.parse_known_args()
 
     if FLAGS.agent == 'GAMBLER':
-        print('Gambler')
+        print('::Gambler::')
         agent = Gambler(learning_rate = FLAGS.learning_rate, 
                         discount = FLAGS.discount,
                         iterations = FLAGS.iterations)
     elif FLAGS.agent == 'ACCOUNTANT':
-        print('Accountant')
+        print('::Accountant::')
         agent = Accountant()
-    elif FLAGS.agent == 'DEEP_GAMBLER':
-        print ('DEEP GAMBLER')
+    elif FLAGS.agent == 'DRUNKARD':
+        print('::Drunkard::')
+        agent = Drunkard()
+    else:
+        print ('::DEEP GAMBLER::')
         agent = DeepGambler(learning_rate = FLAGS.learning_rate, 
                             discount = FLAGS.discount, 
                             iterations = FLAGS.iterations)
-    else:
-        print('Drunkard')
-        agent = Drunkard()
 
     dungeon = Dungeon()
     dungeon.reset()

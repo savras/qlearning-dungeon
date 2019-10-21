@@ -12,8 +12,11 @@ class Dungeon:
     # Determine if the action takes the agent backward or forward depending on whether
     # the dungeon is inverted. A forward action will take the agen backwards if the dungeon is inverted.
     def take_action(self, action):
+        reward = 0
+
         if random.random() < self.inverse:
             action = not action
+
         if action == BACKWARD:
             reward = self.backward_payout
             self.current_position = 0
@@ -25,6 +28,7 @@ class Dungeon:
             else:
                # Give forward payout
                reward = self.forward_payout
+
         return self.current_position, reward
 
     def reset(self):

@@ -1,9 +1,11 @@
 from action import *
-#from tensorflow.python.keras.layers import Input, Dense
-#from keras.models import Sequential
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.utils import to_categorical
 import random
 import numpy as np
 import tensorflow as tf
+import tensorflow.keras as keras
 
 class DeepGambler:
     def __init__ (self, learning_rate = 0.1, discount = 0.9, exploration_rate = 1.0, iterations = 10000):
@@ -15,42 +17,30 @@ class DeepGambler:
         self.input_count = 5 # Each representing the state/position of the agent in the dungeon
         self.output_count = 2 # Left or right
 
-	#self.model = Sequential()
-        self.session = tf.Session()
         self.define_model()
-        self.session.run(self.initializer)
 
     def define_model(self):
-        #self.model.add(Dense(16, 'sigmoid', kernel_initializer = tf.constant_initializer(np.zeros((self.input_count, 16)))))
-	#self.model.add(Dense(16, 'sigmoid', kernel_initializer = tf.constant_initializer(16, np.zeros((self.output_count)))))
-        #self.model.compile(loss, self.optimizer)
-
-        self.model_input = tf.placeholder(dtype = tf.float32, shape = [None, self.input_count])
-
-        ##        
-        # Hidden layers
-        ##
-        # 16 neurons with sigmoid activation
-        fc1 = tf.layers.dense(self.model_input, 16, activation = tf.sigmoid, kernel_initializer = tf.constant_initializer(np.zeros((self.input_count, 16))))
-        fc2 = tf.layers.dense(fc1, 16, activation = tf.sigmoid, kernel_initializer = tf.constant_initializer(np.zeros((16, self.output_count))))
-
-        self.model_output = tf.layers.dense(fc2, self.output_count)
-
-        self.target_output = tf.placeholder(dtype = tf.float32, shape = [None, self.output_count])
-
-        loss = tf.losses.mean_squared_error(self.target_output, self.model_output)
-
-        self.optimizer = tf.train.GradientDescentOptimizer(learning_rate = self.learning_rate).minimize(loss)
-
-        self.initializer = tf.global_variables_initializer()
+        self.model = Sequential()
+        self.model.add(Dense(16, activation="sigmoid", input_shape=(5, )))
+        self.model.add(Dense(16, activation="sigmoid"))
+        self.model.add(Dense(2))
+        self.model.compile(loss="binary_crossentropy", optimizer="rmsprop", metrics=["accuracy"]) 
 
     def get_Q(self, state):
-        return self.session.run(self.model_output, feed_dict = { self.model_input: self.to_one_hot(state) })[0]
-    
+        one_hot = self.to_one_hot(state)
+        to_categorical(one_hot)
+        # result is a 1 x 2 array, signifying [Backward, Forward] q-values
+        # print(f"one_hot:: {one_hot}") 
+        # print(f"shape:: {one_hot.shape}")        
+
+        result = self.model.predict(one_hot)
+        #print(f"result:: {result}")
+        return result
+
     def to_one_hot(self, current_state):
-        one_hot = np.zeros((1,self.input_count))
-        one_hot[0, [current_state]] = 1
-        print(f"One hot:: {one_hot.shape}")
+        one_hot = np.zeros((1, self.input_count))
+
+        one_hot[0, current_state] = 1
         return one_hot
 
     def get_next_action(self, state):
@@ -59,22 +49,29 @@ class DeepGambler:
         else:
             return self.random_action()
 
+    # Returns a 1 by 2 array containing the Q-values for forward and backward.
     def greedy_action(self, state):
+        # BACKWARD == 1, FORWARD == 0
         return np.argmax(self.get_Q(state))
 
     def random_action(self):
         return FORWARD if random.random() < 0.5 else BACKWARD
 
-    def train(self, old_state, action, reward, new_state):
-        old_state_Q_values = self.get_Q(old_state)
-        new_state_Q_values = self.get_Q(new_state)
-        old_state_Q_values[action] = reward + self.discount * np.amax(new_state_Q_values)
+    def train(self, old_position, action, reward, new_position):
+        old_position_Q_values = self.get_Q(old_position)
+        new_position_Q_values = self.get_Q(new_position)
 
-        training_input = self.to_one_hot(old_state)
-        target_output = [old_state_Q_values]
-        training_data = { self.model_input: training_input, self.target_output: target_output }
+        # print(f"old_position:: {old_position_Q_values}")
+        # print(f"new_position:: {new_position_Q_values}")
+        # print(f"action:: {action}")
+        old_position_Q_values[0, [action]] = reward + self.discount * np.amax(new_position_Q_values)
 
-        self.session.run(self.optimizer, feed_dict = training_data)
+        training_input = self.to_one_hot(old_position)
+        target_output = old_position_Q_values
+
+        # print(f"training_input:: training_input")
+        # print(f"shape:: training_input.shape")        
+        self.model.fit(training_input, target_output, batch_size=32, epochs=10, verbose=0)
 
     def update(self, old_state, new_state, action, reward):
         self.train(old_state, action, reward, new_state)
