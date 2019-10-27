@@ -19,13 +19,15 @@ class DeepGambler:
 
         self.define_model()
 
+    # Defines the Keras model.
     def define_model(self):
         self.model = Sequential()
-        self.model.add(Dense(16, activation="sigmoid", input_shape=(5, )))
+        self.model.add(Dense(16, activation="sigmoid", input_shape=(5, ))) # Takes a 2D array with indexer ranging from 0 to 4.
         self.model.add(Dense(16, activation="sigmoid"))
         self.model.add(Dense(2))
         self.model.compile(loss="binary_crossentropy", optimizer="rmsprop", metrics=["accuracy"]) 
 
+    # Gets the prediction which is a 1 x 2 array. E.g. [[0.23423 0.345434]]
     def get_Q(self, state):
         one_hot = self.to_one_hot(state)
         to_categorical(one_hot)
@@ -37,19 +39,21 @@ class DeepGambler:
         #print(f"result:: {result}")
         return result
 
+    # Creates a 2D array of 1 x 5 elements. E.g. [[0 0 0 0 0]]
     def to_one_hot(self, current_state):
         one_hot = np.zeros((1, self.input_count))
 
         one_hot[0, current_state] = 1
         return one_hot
 
+    # Pick either a random action or an action with the greatest reward
     def get_next_action(self, state):
         if random.random() > self.exploration_rate:
             return self.greedy_action(state)
         else:
             return self.random_action()
 
-    # Returns a 1 by 2 array containing the Q-values for forward and backward.
+    # Returns the index of the action with the greatest reward
     def greedy_action(self, state):
         # BACKWARD == 1, FORWARD == 0
         return np.argmax(self.get_Q(state))
